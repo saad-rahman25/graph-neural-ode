@@ -147,7 +147,7 @@ def main():
     print(f"Snapshots → train {len(X_train)}, val {len(X_val)}, test {len(X_test)}")
 
     np.savez(
-        "graph_snapshots_weighted.npz",
+        f"graph_snapshots_weighted{args.history}.npz",
         X_train=X_train, y_train=y_train,
         X_val=X_val,     y_val=y_val,
         X_test=X_test,   y_test=y_test,

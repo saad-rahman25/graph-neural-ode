@@ -68,6 +68,10 @@ def build_graphs(X, y, edge_index, edge_weight):
 def mae(pred, target):
     return torch.mean(torch.abs(pred - target)).item()
 
+def mse(pred, target):
+    return torch.mean((pred - target) ** 2).item()
+
+
 def rmse(pred, target):
     return math.sqrt(torch.mean((pred - target) ** 2).item())
 
@@ -113,12 +117,26 @@ def train(npz_file, hidden, lr, solver="rk4", patience=250, max_epochs=500, batc
         train_mse /= len(train_loader)
 
         # Validation
+        # model.eval()
+        # val_mae = 0.0
+        # with torch.no_grad():
+        #     for batch in val_loader:
+        #         val_mae += mae(model(batch.x, solver), batch.y)
+        # val_mae /= len(val_loader)
+
         model.eval()
-        val_mae = 0.0
+        val_mae, val_rmse, val_mse = 0.0, 0.0, 0.0
+
         with torch.no_grad():
             for batch in val_loader:
-                val_mae += mae(model(batch.x, solver), batch.y)
-        val_mae /= len(val_loader)
+                pred = model(batch.x, solver)
+                val_mae  += mae(pred, batch.y)
+                val_rmse += rmse(pred, batch.y)
+                val_mse  += mse(pred, batch.y)
+
+        val_mae  /= len(val_loader)
+        val_rmse /= len(val_loader)
+        val_mse  /= len(val_loader)
 
         # Early stopping
         if val_mae < best_val_mae:
@@ -133,8 +151,11 @@ def train(npz_file, hidden, lr, solver="rk4", patience=250, max_epochs=500, batc
             "epoch": epoch,
             "train_mse": train_mse,
             "val_mae": val_mae,
+            "val_rmse": val_rmse,
+            "val_mse": val_mse,
             "best_val_mae_so_far": best_val_mae
         })
+
 
         if patience_ctr >= patience:
             print(f"Early stopping at epoch {epoch}")
@@ -158,6 +179,8 @@ def train(npz_file, hidden, lr, solver="rk4", patience=250, max_epochs=500, batc
             test_rmse += rmse(pred, batch.y)
     test_mae /= len(test_loader)
     test_rmse /= len(test_loader)
+
+    
 
     print(f"TEST | MAE={test_mae:.4f}, RMSE={test_rmse:.4f}")
 
